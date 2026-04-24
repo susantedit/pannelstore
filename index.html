@@ -433,6 +433,22 @@ letter-spacing: 0.5px;
 box-shadow: 0 4px 12px rgba(139,92,246,0.4);
 z-index: 100;
 }
+.maintenance-tag {
+position: absolute;
+top: -12px;
+right: 20px;
+background: #ff9800;
+color: #fff;
+padding: 6px 16px;
+border-radius: 20px;
+font-size: 0.75rem;
+font-weight: 700;
+text-transform: uppercase;
+letter-spacing: 0.5px;
+box-shadow: 0 4px 12px rgba(255,152,0,0.4);
+z-index: 100;
+animation: pulse 2s infinite;
+}
 .btn {
 width: 100%;
 padding: 14px;
@@ -1749,7 +1765,7 @@ letter-spacing: 2px;
 <div class="grid">
 <!-- DRIP CLIENT -->
 <div class="card">
-<div class="best-value">BEST VALUE</div>
+<div class="maintenance-tag">🔧 MAINTENANCE</div>
 <div class="card-header">
 <div class="card-title">DRIP CLIENT</div>
 <span class="badge badge-hot">Most Popular</span>
@@ -2616,7 +2632,10 @@ letter-spacing: 2px;
 <!-- ESEWA/KHALTI PAYMENT -->
 <div class="payment-content active" id="esewa-payment">
 <div class="qr-container">
-<img src="payment.jpeg" alt="eSewa/Khalti Payment QR">
+<img src="payment.jpeg" alt="eSewa/Khalti Payment QR" id="esewa-qr">
+<div style="margin-top: 12px; display: flex; gap: 8px;">
+<button onclick="downloadQR('esewa-qr', 'SUSANTEDIT-eSewa-Payment-QR')" style="flex: 1; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.9rem;">⬇️ Download QR</button>
+</div>
 </div>
 <div class="payment-info">
 <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 8px;">💳 Payment Methods: <strong style="color: var(--text);">eSewa | Khalti</strong></p>
@@ -2627,7 +2646,10 @@ letter-spacing: 2px;
 <!-- BANK TRANSFER PAYMENT -->
 <div class="payment-content" id="bank-payment">
 <div class="qr-container">
-<img src="bank.jpg" alt="Bank Transfer QR">
+<img src="bank.jpg" alt="Bank Transfer QR" id="bank-qr">
+<div style="margin-top: 12px; display: flex; gap: 8px;">
+<button onclick="downloadQR('bank-qr', 'SUSANTEDIT-Bank-Transfer-QR')" style="flex: 1; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.9rem;">⬇️ Download QR</button>
+</div>
 </div>
 <div class="payment-info">
 <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 8px;">🏦 Payment Method: <strong style="color: var(--text);">Bank Transfer</strong></p>
@@ -2825,8 +2847,82 @@ let message = `🎮 *SUSANTEDIT ORDER CONFIRMATION*%0A%0A` +
 window.open(`https://wa.me/9779708838261?text=${message}`, "_blank");
 }
 
+function sendWhatsAppEnhanced() {
+// Validate form before sending
+if (!validateForm()) return;
+
+const playerID = document.getElementById('playerID').value.trim();
+const playerName = document.getElementById('playerName').value.trim();
+const promoCode = document.getElementById('promoCode').value.trim();
+
+if (!selectedProduct || !selectedPrice) {
+showToast('⚠️ Please select a package first!', 'warning');
+return;
+}
+
+if (!playerName) {
+showToast('⚠️ Please enter your name!', 'warning');
+return;
+}
+
+// Generate order details
+const timestamp = new Date().toLocaleString();
+const orderID = 'ORD' + Date.now().toString().slice(-6);
+const discountInfo = promoCode && promoCodes[promoCode.toUpperCase()] ? 
+  `\n🎉 Promo Code: ${promoCode.toUpperCase()}` : '';
+
+// Build clean message without URL encoding - use actual line breaks
+let messageLines = [
+  "🎮 PAYMENT CONFIRMATION - SUSANTEDIT",
+  "═════════════════════════════",
+  "",
+  "ORDER DETAILS",
+  `Order ID: ${orderID}`,
+  `Product: ${selectedProduct}`,
+  `Amount: ₹${selectedPrice}${discountInfo}`,
+  `Payment Method: ${selectedPaymentMethod}`,
+  `Date & Time: ${timestamp}`,
+  "",
+  "CUSTOMER INFO",
+  `Name: ${playerName}`,
+  `Player ID/UID: ${playerID || 'N/A'}`,
+  "",
+  "ACTION REQUIRED",
+  "Please send your payment screenshot to confirm.",
+  "Activation will be done within 5-10 minutes after verification.",
+  "",
+  "IMPORTANT",
+  "• Verify your Player ID/UID is correct",
+  "• Save your Order ID for reference",
+  "• No refunds after service activation",
+  "",
+  "Thank you for your purchase!"
+];
+
+const message = messageLines.join("\n");
+
+// Send to WhatsApp with visual feedback
+showToast('📱 Opening WhatsApp...', 'info', 1500);
+setTimeout(() => {
+window.open(`https://wa.me/9779708838261?text=${encodeURIComponent(message)}`, '_blank');
+// Show success notification
+showToast('✅ Payment confirmation sent! Awaiting verification.', 'success', 3000);
+}, 500);
+
+// Clear form after sending
+setTimeout(() => {
+document.getElementById('playerID').value = '';
+document.getElementById('playerName').value = '';
+document.getElementById('promoCode').value = '';
+}, 2000);
+}
+
 window.onclick = function(event) {
-if (event.target == document.getElementById('modal')) closeModal();
+const modal = document.getElementById('modal');
+// Only close if clicking directly on the modal background itself
+if (event.target.id === 'modal') {
+closeModal();
+}
 }
 
 // Live counter animation
@@ -2931,6 +3027,25 @@ function copyToClipboard(text, label = 'Text') {
 navigator.clipboard.writeText(text).then(() => {
 showToast(`✓ ${label} copied!`, 'success', 2000);
 }).catch(() => { showToast(`Failed to copy`, 'error'); });
+}
+
+// Download QR Code
+function downloadQR(elementId, fileName) {
+const qrImage = document.getElementById(elementId);
+if (!qrImage) {
+showToast('❌ QR Code not found', 'error');
+return;
+}
+
+const link = document.createElement('a');
+link.href = qrImage.src;
+link.download = `${fileName}.jpeg`;
+link.style.display = 'none';
+document.body.appendChild(link);
+link.click();
+document.body.removeChild(link);
+
+showToast('✅ QR Code downloaded successfully!', 'success', 2000);
 }
 
 // Form Validation
@@ -3164,6 +3279,25 @@ bundlePromo.style.display = 'none';
 
 // Initialize all features
 document.addEventListener('DOMContentLoaded', function() {
+// Prevent modal close when clicking inside modal-content
+const modals = document.querySelectorAll('.modal');
+modals.forEach(modal => {
+const modalContent = modal.querySelector('.modal-content');
+if (modalContent) {
+modalContent.addEventListener('click', function(event) {
+event.stopPropagation();
+});
+}
+});
+
+// Also prevent closing when clicking on form inputs and buttons
+const inputs = document.querySelectorAll('input, button, select, textarea');
+inputs.forEach(input => {
+input.addEventListener('click', function(event) {
+event.stopPropagation();
+});
+});
+
 updateStockBadges();
 setInterval(updateStockBadges, 30000);
 showToast('Welcome! 🎮', 'info', 2000);
